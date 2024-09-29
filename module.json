@@ -1,0 +1,18 @@
+{
+  "id": "foundry-slot-in-maker",
+  "title": "Foundry Slot-In Maker",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12"
+  },
+  "authors": [
+    {
+      "name": "miki4920",
+      "flags": {}
+    }
+  ],
+    "esmodules": [
+    "/scripts/module.js"
+  ]
+}
