@@ -1,0 +1,31 @@
+<form>
+    <div class="form-group">
+        <label for="systemSelect">Game System</label>
+    </div>
+    <div class="form-group">
+        <select id="systemSelect" name="gameSystem" required>
+            <option value="" disabled selected>Select a game system</option>
+            <option value="Dungeons & Dragons">Dungeons & Dragons</option>
+            <option value="Pathfinder">Pathfinder</option>
+        </select>
+    </div>
+
+    <!-- Slot-in Text Section -->
+    <div class="form-group">
+        <label for="moduleText">Slot-in Text</label>
+    </div>
+    <div class="form-group">
+        <textarea id="moduleText" name="moduleText" placeholder="Enter text here" rows="10" required></textarea>
+    </div>
+
+    <!-- Slot-in Folder Section -->
+    <div class="form-group">
+        <label for="slotinFolder">Slot-in Folder</label>
+    </div>
+    <div class="form-group">
+        {{filePicker type="folder" target="path"}}
+        <input type='text' id="slotinFolder" name="path" value="{{this.path}}" />
+    </div>
+
+    <button type="submit">Submit</button>
+</form>
