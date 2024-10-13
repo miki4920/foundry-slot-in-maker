@@ -214,11 +214,11 @@ class SessionForm extends FormApplication {
     }
 
     async processJournalItems(line, monsterFolder, itemFolder) {
-        const regex = /\[(.*?)\]\((.*?)\) \(.*?\)/g;
+        const regex = /\[(.*?)\]\((.*?)\)/g;
         let match;
         let processedLine = line;
         while ((match = regex.exec(line)) !== null) {
-            const text = this.getSingularForm(match[1]);
+            const text = await this.getSingularForm(match[1]);
             const [item] = await game.packs.get("dnd5e.items").getDocuments({ name: text });
             const [spell] = await game.packs.get("dnd5e.spells").getDocuments({ name: text });
             const [monster] = await game.packs.get("dnd5e.monsters").getDocuments({ name: text });
