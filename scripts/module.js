@@ -1,5 +1,6 @@
 import {sbiParser} from "../../5e-statblock-importer/scripts/sbiParser.js";
 import {DDImporter} from "../../foundry-vtt-module-maker/ddimport.js";
+import {sbiActor} from "../../5e-statblock-importer/scripts/sbiActor.js";
 
 class SessionForm extends FormApplication {
     constructor(object = {}, options = {}) {
@@ -95,17 +96,20 @@ class SessionForm extends FormApplication {
             const lines = monster.split('\n');
             const formattedBlock = [];
             for (let line of lines) {
-                line = line.replace(/[:*#_]/g, '').trim();
+                line = line.replace(/^:\s*$/g, '').trim();
+                line = line.replace(/[*#_]/g, '').trim();
+                line = line.replace(/::/g, '').trim();
                 line = line.replace(/\|-+.*/g, '').trim();
                 line = line.replace(/\|/g, ' ').trim();
-                line = line.replace(/(ft)/g, ' ft').trim();
+                line = line.replace(/(\d)ft/g, '$1 ft').trim();
                 line = line.replace(/ {2,}/g, ' ').trim();
                 formattedBlock.push(line);
             }
             monster = formattedBlock.join('\n');
             monster = monster.trim().split(/\n/g).filter(str => str.length);
             let monsterName = monster[0];
-            await sbiParser.parseInput(monster, folder.id);
+            monster = await sbiParser.parseInput(monster, folder.id);
+            await sbiActor.convertCreatureToActorAsync(monster.creature, folder.id)
             let monsterActor = game.actors.find(actor => actor.name === monsterName);
             if (monsterActor) {
                 await this.createToken(monsterActor, monsterName, modulePath)
