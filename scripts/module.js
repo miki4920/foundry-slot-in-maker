@@ -32,6 +32,45 @@ class SessionForm extends FormApplication {
 
     }
 
+    async processMacros(folder) {
+        let macroName = "Stop All Music";
+        let macroData = {
+            name: macroName,
+            type: "script",
+            command: `game.playlists.filter(p => p.playing).forEach(p => p.stopAll());`,
+            img: "icons/svg/sound-off.svg",
+            folder: folder.id
+        };
+        return Macro.create(macroData);
+    }
+
+
+    async processMusic(folder, modulePath) {
+        const musicFolderPath = `${modulePath}/Music`;
+        const musicFolders = await FilePicker.browse("data", musicFolderPath);
+        let playlist = game.playlists.contents.find(p => p.name === folder.name);
+        let playlistsDict = {};
+        for (const subFolder of musicFolders.dirs) {
+            const files = await FilePicker.browse("data", subFolder);
+            if (files.files.length === 0) continue;
+            let folderName = decodeURIComponent(subFolder.split('/').pop());
+            folderName = folderName.includes("-") ? folderName.split("-")[0] : folderName;
+            playlist = await Playlist.create({ name: folderName, folder: folder?.id || null });
+            playlistsDict[folderName] = playlist;
+            const songFile = files.files[0];
+            const songName = decodeURIComponent(songFile.split('/').pop());
+            await playlist.createEmbeddedDocuments("PlaylistSound", [{
+                name: songName,
+                path: songFile,
+                playing: false,
+                repeat: true
+            }]);
+        }
+        return playlistsDict;
+    }
+
+
+
     async extractPages(textInput) {
         let pages = textInput.split('\\page');
         if (pages.length < 3) {
@@ -263,7 +302,23 @@ class SessionForm extends FormApplication {
         return processedLine.replace('  ', ' ');
     }
 
-    async processJournals(journals, folder, monsters, monsterFolder, itemFolder) {
+    async addMusic(name, content, macro, musicList) {
+        const prefix = name.slice(0, 2);
+        if (musicList.hasOwnProperty(prefix)) {
+            const music = musicList[prefix];
+            let embeddedContent;
+            if (prefix === "A1") {
+                embeddedContent = `Start playing @UUID[${music.uuid}].\n`;
+            }
+            else {
+                embeddedContent = `@UUID[${macro.uuid}], and start playing @UUID[${music.uuid}].\n`;
+            }
+            return `${embeddedContent}${content}`;
+        }
+        return content;
+    }
+
+    async processJournals(journals, folder, monsters, monsterFolder, itemFolder, macro, musicList) {
         journals = journals.join('\n').split('\n')
         const mainJournal = await JournalEntry.create({
             name: 'Dungeon Design',
@@ -306,13 +361,14 @@ class SessionForm extends FormApplication {
         }
 
         const converter = new showdown.Converter();
-        for (const [name, content] of Object.entries(entries)) {
+        for (let [name, content] of Object.entries(entries)) {
+            content = await this.addMusic(name, content, macro, musicList);
             let contentConverted = converter.makeHtml(content);
             await mainJournal.createEmbeddedDocuments('JournalEntryPage', [{name: name, "text.content": contentConverted, "text.format":CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML}])
         }
     }
 
-    async processJournalsPathfinder(journals, folder, monsters, monsterFolder, itemFolder, modulePath) {
+    async processJournalsPathfinder(journals, folder, monsters, monsterFolder, itemFolder, macro, musicList, modulePath) {
         journals = journals.join('\n').split('\n')
         const mainJournal = await JournalEntry.create({
             name: 'Dungeon Design',
@@ -368,7 +424,8 @@ class SessionForm extends FormApplication {
         }
 
         const converter = new showdown.Converter();
-        for (const [name, content] of Object.entries(entries)) {
+        for (let [name, content] of Object.entries(entries)) {
+            content = await this.addMusic(name, content, macro, musicList);
             let contentConverted = converter.makeHtml(content);
             await mainJournal.createEmbeddedDocuments('JournalEntryPage', [{name: name, "text.content": contentConverted, "text.format":CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML}])
         }
@@ -384,16 +441,22 @@ class SessionForm extends FormApplication {
         let itemFolder = await this.createFolder(formData.path, 'Items', 'Item');
         let journalFolder = await this.createFolder(formData.path, 'Journals', 'JournalEntry');
         let sceneFolder = await this.createFolder(formData.path, 'Maps', 'Scene');
+        let macroFolder = await this.createFolder(formData.path, 'Macros', 'Macro');
+        let musicFolder = await this.createFolder(formData.path, 'Music', 'Playlist')
         let monsterList;
+
+        let macro = await this.processMacros(macroFolder);
+        let musicList = await this.processMusic(musicFolder, formData.path);
+
         if (formData.gameSystem === 'Dungeons & Dragons') {
             pageBreakdown = await this.extractPages(formData.moduleText);
             monsterList = await this.processMonsters(pageBreakdown.monsters, monsterFolder, formData.path);
-            await this.processJournals(pageBreakdown.journals, journalFolder, monsterList, monsterFolder, itemFolder);
+            await this.processJournals(pageBreakdown.journals, journalFolder, monsterList, monsterFolder, itemFolder, macro, musicList);
         }
         else if (formData.gameSystem === 'Pathfinder') {
             pageBreakdown = await this.extractPagesPathfinder(formData.moduleText);
             monsterList = await this.processMonstersPathfinder(monsterFolder, formData.path);
-            await this.processJournalsPathfinder(pageBreakdown.journals, journalFolder, monsterList, monsterFolder, itemFolder, formData.path);
+            await this.processJournalsPathfinder(pageBreakdown.journals, journalFolder, monsterList, monsterFolder, itemFolder, macro, musicList, formData.path);
         }
 
         await this.processMaps(sceneFolder, formData.path);
