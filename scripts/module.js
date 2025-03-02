@@ -67,7 +67,7 @@ class SessionForm extends FormApplication {
             journals: []
         };
         for (let i = 0; i < pages.length; i++) {
-            let match = pages[i].match(/{{label Creature \d}}/);
+            let match = pages[i].match(/{{label Creature \d+}}/);
             if (!match) {
                 pageBreakdown.journals.push(pages[i])
             }
@@ -295,8 +295,8 @@ class SessionForm extends FormApplication {
             if (line.startsWith('## ')) {
                 line = `**${line.slice(3)}**`;
             }
-            line = await this.processJournalMonsters(line, monsters);
             line = await this.processJournalItems(line, monsterFolder, itemFolder);
+            line = await this.processJournalMonsters(line, monsters);
 
             currentEntryLines.push(line);
         }
@@ -358,8 +358,8 @@ class SessionForm extends FormApplication {
             if (line.startsWith('## ')) {
                 line = `**${line.slice(3)}**`;
             }
-            line = await this.processJournalMonsters(line, monsters);
             line = await this.processJournalItemsPathfinder(line, monsterFolder, itemFolder, modulePath);
+            line = await this.processJournalMonsters(line, monsters);
             currentEntryLines.push(line);
         }
 
