@@ -468,14 +468,13 @@ class SessionForm extends FormApplication {
     }
 }
 
-Hooks.on("renderSidebarTab", async (app, html) => {
-    if (app instanceof SceneDirectory) {
+Hooks.on("renderSceneDirectory", async (app, html) => {
+    let footer = $("#scenes .directory-footer.action-buttons");
+    if (footer.find("button:contains('Slot-in Session')").length === 0) {
         let sessionButton = $("<button class='import-dd'><i class='fas fa-book'></i>Slot-in Session</button>");
-
-        sessionButton.click(async (ev) => {
+        footer.append(sessionButton);
+        sessionButton.on("click", function() {
             new SessionForm().render(true);
         });
-
-        html.find(".directory-footer").append(sessionButton);
     }
 });
