@@ -147,9 +147,9 @@ class SessionForm extends FormApplication {
             monster = formattedBlock.join('\n');
             monster = monster.trim().split(/\n/g).filter(str => str.length);
             let monsterName = monster[0];
-            monster = await sbiParser.parseInput(monster, folder.id);
-            await sbiActor.convertCreatureToActorAsync(monster.creature, folder.id)
-            let monsterActor = game.actors.find(actor => actor.name === monsterName);
+			monster = monster.join('\n');
+            let monsterActor = await sbiParser.parseInput(monster).actor.createActor5e(folder.id);
+			monsterActor = monsterActor.actor5e;
             if (monsterActor) {
                 await this.createToken(monsterActor, monsterName, modulePath)
                 monsterList.push(monsterActor)
